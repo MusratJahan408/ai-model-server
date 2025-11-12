@@ -66,6 +66,12 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/my-models", verifyToken, async(req,res)=>{
+      const email = req.query.email
+      const result = await modelCollection.find({createdBy : email}).toArray()
+      res.send(result)
+    })
+
     app.put("/models/:id", async (req, res) => {
       const { id } = req.params;
       const data = req.body;
