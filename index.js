@@ -54,6 +54,7 @@ async function run() {
 
     const db = client.db("model-db");
     const modelCollection = db.collection("models");
+    const purchaseCollection = db.collection("purchase");
 
     app.get("/models", async (req, res) => {
       const result = await modelCollection.find().toArray();
@@ -99,6 +100,28 @@ async function run() {
       const result = await modelCollection.insertOne(data);
       res.send(result);
     });
+
+    app.post("/purchase/:id", verifyToken, async (req, res) => {
+      const data = req.body;
+      const id = req.params.id
+      const result = await purchaseCollection.insertOne(data);
+      const filter = {_id : new ObjectId(id)}
+      const update ={
+        $inc :{
+          purchased : 1
+        }
+      }
+      const purchasedCount = await modelCollection.updateOne(filter,update)
+      res.send({result,purchasedCount});
+    });
+
+    app.get("/my-purchase", verifyToken, async (req, res) => {
+      const email = req.query.email
+      const result = await purchaseCollection.find({purchased_by : email}).toArray();
+      res.send(result);
+    });
+
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log(
