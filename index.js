@@ -48,6 +48,12 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/models/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await modelCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
     app.post("/models", async (req, res) => {
       const data = req.body;
       const result = await modelCollection.insertOne(data);
