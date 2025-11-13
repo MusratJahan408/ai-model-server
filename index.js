@@ -11,9 +11,8 @@ app.use(cors());
 app.use(express.json());
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
 });
-
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.two3kqb.mongodb.net/?appName=Cluster0`;
 
@@ -26,27 +25,24 @@ const client = new MongoClient(uri, {
   },
 });
 
-const verifyToken = async(req,res,next)=>{
-  const authorization = req.headers.authorization
-  if(!authorization){
-   return res.status(401).send({
-      message : "unauthorized access.Token not found"
-    })
+const verifyToken = async (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({
+      message: "unauthorized access.Token not found",
+    });
   }
-  const token = authorization.split(' ')[1]
-  
+  const token = authorization.split(" ")[1];
+
   try {
-    await admin.auth().verifyIdToken(token)
-    next()
+    await admin.auth().verifyIdToken(token);
+    next();
   } catch (error) {
     res.status(401).send({
-      message : "unauthorized access"
-    })
+      message: "unauthorized access",
+    });
   }
-
-  
-
-}
+};
 
 async function run() {
   try {
@@ -61,17 +57,17 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/models/:id", verifyToken, async (req, res) => {
+    app.get("/models/:id", async (req, res) => {
       const { id } = req.params;
       const result = await modelCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    app.get("/my-models", verifyToken, async(req,res)=>{
-      const email = req.query.email
-      const result = await modelCollection.find({createdBy : email}).toArray()
-      res.send(result)
-    })
+    app.get("/my-models", async (req, res) => {
+      const email = req.query.email;
+      const result = await modelCollection.find({ createdBy: email }).toArray();
+      res.send(result);
+    });
 
     app.put("/models/:id", async (req, res) => {
       const { id } = req.params;
@@ -90,10 +86,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/latest-models", async(req,res)=>{
-      const result = await modelCollection.find().sort({createdAt : 'desc'}).limit(6).toArray()
-      res.send(result)
-    })
+    app.get("/latest-models", async (req, res) => {
+      const result = await modelCollection
+        .find()
+        .sort({ createdAt: "desc" })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
 
     app.post("/models", async (req, res) => {
       const data = req.body;
@@ -103,25 +103,43 @@ async function run() {
 
     app.post("/purchase/:id", verifyToken, async (req, res) => {
       const data = req.body;
-      const id = req.params.id
+      const id = req.params.id;
       const result = await purchaseCollection.insertOne(data);
-      const filter = {_id : new ObjectId(id)}
-      const update ={
-        $inc :{
-          purchased : 1
-        }
-      }
-      const purchasedCount = await modelCollection.updateOne(filter,update)
-      res.send({result,purchasedCount});
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $inc: {
+          purchased: 1,
+        },
+      };
+      const purchasedCount = await modelCollection.updateOne(filter, update);
+      res.send({ result, purchasedCount });
     });
 
     app.get("/my-purchase", verifyToken, async (req, res) => {
-      const email = req.query.email
-      const result = await purchaseCollection.find({purchased_by : email}).toArray();
+      const email = req.query.email;
+      const result = await purchaseCollection
+        .find({ purchased_by: email })
+        .toArray();
       res.send(result);
     });
 
-    
+    app.get("/search", async (req, res) => {
+      const searchText = req.query.search;
+      const result = await modelCollection
+        .find({ name: { $regex: searchText, $options: "i" } })
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/filter", async (req, res) => {
+      const framework = req.query.framework;
+      let query = {};
+      if (framework) {
+        query.framework = framework;
+      }
+      const result = await modelCollection.find(query).toArray();
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
