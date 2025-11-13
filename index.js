@@ -46,7 +46,7 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("model-db");
     const modelCollection = db.collection("models");
@@ -59,7 +59,8 @@ async function run() {
 
     app.get("/models/:id", async (req, res) => {
       const { id } = req.params;
-      const result = await modelCollection.findOne({ _id: new ObjectId(id) });
+      const result = await modelCollection.findOne({ _id:new ObjectId(id) });
+      console.log(result)
       res.send(result);
     });
 
@@ -141,7 +142,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
